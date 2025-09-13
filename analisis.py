@@ -65,20 +65,51 @@ def realizar_analisis(expresion_str, valor_x_str):
     resultados_texto['intersecciones_x'] = f"Intersecciones Eje X (raíces reales): {raices_formateadas}"
     resultados_puntos['intersecciones_x'] = raices_puntos
 
-    #5. Cálculo del Recorrido (para parábolas)
+     # 5. Cálculo del Recorrido (Método Generalizado con respaldo para Parábolas)
     recorrido_str = "No se pudo determinar automáticamente."
+    justificacion_recorrido = ""
+
     try:
-        if expresion.as_poly(x).degree() == 2:
-            a, b, c = expresion.as_poly(x).all_coeffs()
-            vx = -b / (2*a)
-            vy = expresion.subs(x, vx)
-            vy_f = _formatear_numero(vy.evalf())
-            vx_f = _formatear_numero(vx.evalf())
-            recorrido_str = f"[{vy_f}, ∞)" if a > 0 else f"(-∞, {vy_f}]"
-            justificacion += f"4. Recorrido: La función es una parábola con vértice en ({vx_f}, {vy_f}).\n   Resultado: {recorrido_str}\n"
-    except Exception:
-        justificacion += "4. Recorrido: Solo se calcula para funciones parabólicas.\n"
+        # Define 'y' como un símbolo para la ecuación y = f(x)
+        y = sp.Symbol('y', real=True)
+        
+        # Intenta resolver para x en términos de y (hallar la función inversa)
+        soluciones_inversa = sp.solveset(sp.Eq(expresion, y), x, domain=S.Reals)
+
+        if soluciones_inversa.is_empty:
+            raise NotImplementedError("No se pudo hallar una función inversa real.")
+            
+        expr_inversa = list(soluciones_inversa)[0]
+        
+        rango = sp.calculus.util.continuous_domain(expr_inversa, y, S.Reals)
+        
+        recorrido_str = latex(rango)
+        justificacion_recorrido = (
+            "4. Recorrido: Se calculó el dominio de la función inversa f⁻¹(y).\n"
+            f"   Inversa (x en términos de y): {latex(expr_inversa)}\n"
+            f"   Resultado (Dominio de la inversa): {recorrido_str}\n"
+        )
+    except Exception: 
+        # Si el método de la inversa falla por CUALQUIER razón, intentamos el respaldo.
+        try:
+            if expresion.as_poly(x) and expresion.as_poly(x).degree() == 2:
+                a, b, c = expresion.as_poly(x).all_coeffs()
+                vx = -b / (2*a)
+                vy = expresion.subs(x, vx)
+                vy_f = _formatear_numero(vy.evalf())
+                intervalo = f"[{vy_f}, \\infty)" if a > 0 else f"(-\\infty, {vy_f}]"
+                recorrido_str = intervalo
+                justificacion_recorrido = (
+                    "4. Recorrido: El método de la inversa falló. Se usó el método para parábolas.\n"
+                    f"   Vértice calculado en y = {vy_f}. Resultado: {recorrido_str}\n"
+                )
+            else:
+                justificacion_recorrido = "4. Recorrido: No se pudo determinar automáticamente por el método de la inversa y no es una parábola.\n"
+        except Exception:
+             justificacion_recorrido = "4. Recorrido: No se pudo determinar automáticamente.\n"
+
     resultados_texto['recorrido'] = f"Recorrido: {recorrido_str}"
+    justificacion += justificacion_recorrido
 
     #6. Evaluación de Punto
     pasos_evaluacion = ""
@@ -106,5 +137,6 @@ def realizar_analisis(expresion_str, valor_x_str):
         f"{resultados_texto['interseccion_y']}\n{resultados_texto['intersecciones_x']}\n\n"
         f"{justificacion}{pasos_evaluacion}"
     )
+
 
     return texto_final, resultados_puntos, expresion
