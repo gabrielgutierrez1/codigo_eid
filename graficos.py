@@ -43,11 +43,12 @@ def generar_grafica(expresion, datos_puntos):
         px, py = datos_puntos['punto_evaluado']
         ax.plot(px, py, "mo", markersize=8, label=f"Punto ({px:g}, {py:.2f})")
 
-    #Estilo Final del Gráfico
+   # Estilo Final del Gráfico
     ax.set_title(f"Gráfico de f(x) = {expresion}")
     ax.set_xlabel("x")
     ax.set_ylabel("f(x)")
     ax.grid(True, linestyle='--', linewidth=0.5)
+    ax.set_ylim(-20, 20) 
     
     # Este bloque evita etiquetas duplicadas en la leyenda.
     handles, labels = ax.get_legend_handles_labels()
@@ -55,4 +56,5 @@ def generar_grafica(expresion, datos_puntos):
     ax.legend(by_label.values(), by_label.keys())
     
     fig.tight_layout()
+
     return fig
